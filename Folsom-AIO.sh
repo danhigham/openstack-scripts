@@ -31,7 +31,7 @@ CLOUD_ADMIN_PASS=password			# Password will use to login into Dashboard later
 TENANT=openstackDemo				# The name of tenant (project)
 SERVICE_TENANT=service				# Service tenant
 REGION=RegionOne				# You must specific it. Imagine that you have multi datacenter. Not important, just keep it by default
-HYPERVISOR=qemu					# if your machine support KVM (check by run $ kvm-ok), change QEMU to KVM
+HYPERVISOR=kvm					# if your machine support KVM (check by run $ kvm-ok), change QEMU to KVM
 
 ################################################
 
@@ -43,22 +43,12 @@ if [ "$(id -u)" != "0" ]; then
    exit 1
 fi
 
-##### Pre-configure #####
-# Enable Cloud Archive repository for Ubuntu
-
-cat > /etc/apt/sources.list.d/folsom.list <<EOF
-deb http://ubuntu-cloud.archive.canonical.com/ubuntu precise-updates/folsom main
-EOF
-
 # add the public key for the folsom repository
 sudo apt-get install ubuntu-cloud-keyring
 
 # update Ubuntu
 apt-get update
 apt-get upgrade -y
-
-# Load 8021q module into the kernel - support Vlan mode
-modprobe 8021q
 
 # Create ~/openrc contains identity information
 
@@ -369,17 +359,12 @@ sql_connection=mysql://nova:nova@$IP/nova_db
 # NETWORK
 dhcpbridge_flagfile=/etc/nova/nova.conf
 dhcpbridge=/usr/bin/nova-dhcpbridge
-network_manager=nova.network.manager.VlanManager
+network_manager=nova.network.manager.FlatDHCPManager
+fixed_range=10.0.0.0/8
+flat_network_bridge=br100
+flat_interface=$PRIVATE_NIC
+flat_injected=False
 public_interface=$PUBLIC_NIC
-vlan_interface=$PRIVATE_NIC
-fixed_range=10.10.10.0/24
-routing_source_ip=$IP
-force_dhcp_release=True
-iscsi_helper=ietadm
-iscsi_ip_address=$IP
-#my_ip=$IP
-#multi_host=True
-#firewall_driver=nova.virt.libvirt.firewall.IptablesFirewallDriver
 
 # NOVNC
 novnc_enabled=true
@@ -454,8 +439,7 @@ nova-manage service list
 
 # Create fixed and floating ips
 
-nova-manage network create --label vlan1 --fixed_range_v4 10.10.10.0/24 --num_networks 1 --network_size 256 --vlan 1 #--multi_host=T
-
+nova-manage network create private --label private_lan --fixed_range_v4 10.0.0.0/24
 nova-manage floating create --ip_range $PUBLIC_IP_RANGE
 
 # Define security rules
