@@ -23,7 +23,7 @@
 
 IP=192.168.0.110				# You public IP 
 PUBLIC_IP_RANGE=192.168.0.164/27		# The floating IP range
-PUBLIC_NIC=eth0					# The public NIC, floating network, allow instance connect to Internet
+PUBLIC_NIC=br100				# The public NIC, floating network, allow instance connect to Internet
 PRIVATE_NIC=eth0				# The private NIC, fixed network. If you have more than 2 NICs specific it eg: eth1
 MYSQL_PASS=root					# Default password of mysql-server
 CLOUD_ADMIN=admin				# Cloud admin of Openstack
@@ -357,14 +357,20 @@ scheduler_driver=nova.scheduler.simple.SimpleScheduler
 sql_connection=mysql://nova:nova@$IP/nova_db
 
 # NETWORK
+network_manager=nova.network.manager.FlatDHCPManager
+# network_manager=nova.network.manager.FlatManager
+force_dhcp_release=True
 dhcpbridge_flagfile=/etc/nova/nova.conf
 dhcpbridge=/usr/bin/nova-dhcpbridge
-network_manager=nova.network.manager.FlatDHCPManager
-fixed_range=10.0.0.0/8
+firewall_driver=nova.virt.libvirt.firewall.IptablesFirewallDriver
+# firewall_driver=nova.virt.firewall.NoopFirewallDriver
+# Change my_ip to match each host
+my_ip=$IP
+metadata_host=$my_ip
+public_interface=$PUBLIC_NIC
 flat_network_bridge=br100
 flat_interface=$PRIVATE_NIC
-flat_injected=False
-public_interface=$PUBLIC_NIC
+fixed_range=10.0.0.0/24
 
 # NOVNC
 novnc_enabled=true
